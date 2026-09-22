@@ -8,13 +8,22 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 
+# ============ API v1 ============
+api_v1_patterns = [
+    path('accounts/', include('apps.accounts.urls')),
+    path('auth/', include('apps.authentication.urls.v1')),
+    # path('categories/', include('apps.categories.urls')),
+    # path('products/', include('apps.products.urls')),
+    # path('carts/', include('apps.carts.urls')),
+    # path('coupons/', include('apps.coupons.urls')),
+    # path('orders/', include('apps.orders.urls')),
+]
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1/', include(api_v1_patterns)),
 
-    # API endpoints
-    path('api/accounts/', include('accounts.urls')),
-
-    # API Documentation
+    # Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),

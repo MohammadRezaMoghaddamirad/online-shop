@@ -23,12 +23,14 @@ INSTALLED_APPS = [
     'drf_spectacular',
 
     # Local apps
-    'accounts',
-    'categories',
-    'products',
-    'carts',
-    'coupons',
-    'orders',
+    'apps.accounts', 
+    'apps.authentication',  
+    'apps.categories',
+    'apps.products',
+    'apps.carts',
+    'apps.coupons',
+    'apps.orders',
+
 ]
 
 MIDDLEWARE = [
