@@ -13,7 +13,7 @@ api_v1_patterns = [
     path('accounts/', include('apps.accounts.urls')),
     path('auth/', include('apps.authentication.urls.v1')),
     path('categories/', include('apps.categories.urls.v1')),
-    # path('products/', include('apps.products.urls')),
+      path('products/', include('apps.products.urls.v1')),
     # path('carts/', include('apps.carts.urls')),
     # path('coupons/', include('apps.coupons.urls')),
     # path('orders/', include('apps.orders.urls')),
