@@ -12,7 +12,7 @@ from drf_spectacular.views import (
 api_v1_patterns = [
     path('accounts/', include('apps.accounts.urls')),
     path('auth/', include('apps.authentication.urls.v1')),
-    # path('categories/', include('apps.categories.urls')),
+    path('categories/', include('apps.categories.urls.v1')),
     # path('products/', include('apps.products.urls')),
     # path('carts/', include('apps.carts.urls')),
     # path('coupons/', include('apps.coupons.urls')),
