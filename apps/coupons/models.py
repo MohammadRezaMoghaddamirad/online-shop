@@ -1,5 +1,4 @@
-﻿
-from django.db import models
+﻿from django.db import models
 from django.utils import timezone
 
 
@@ -51,6 +50,8 @@ class CouponUsage(models.Model):
     """استفاده از کد تخفیف"""
     coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='usages')
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
+    order = models.ForeignKey('orders.Order', on_delete=models.CASCADE,
+                              null=True, blank=True)
     used_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
