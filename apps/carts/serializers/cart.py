@@ -2,7 +2,6 @@
 from ..models import Cart
 from .cart_item import CartItemSerializer
 
-
 class CartSerializer(serializers.ModelSerializer):
     """Ù†Ù…Ø§ÛŒØ´ Ú©Ø§Ù…Ù„ Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯"""
     items = CartItemSerializer(many=True, read_only=True)
