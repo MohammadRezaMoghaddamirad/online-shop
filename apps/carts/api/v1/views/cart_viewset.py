@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
-from ....models import Cart, CartItem
-from ..serializers import (
+from apps.carts.models import Cart, CartItem
+from apps.carts.api.v1.serializers import (
     CartSerializer,
     AddToCartSerializer,
     UpdateCartItemSerializer,

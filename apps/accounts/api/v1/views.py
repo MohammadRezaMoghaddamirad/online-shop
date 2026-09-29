@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from .serializers import (
+from apps.accounts.api.v1.serializers import (
     UserSerializer, ProfileUpdateSerializer, AdminUserSerializer
 )
 from apps.authentication.api.v1.permissions import IsAdmin

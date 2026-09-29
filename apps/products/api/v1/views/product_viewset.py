@@ -4,13 +4,13 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from ....models import Product
-from ..serializers import (
+from apps.products.models import Product
+from apps.products.api.v1.serializers import (
     ProductListSerializer,
     ProductDetailSerializer,
     StockUpdateSerializer
 )
-from ..permissions import IsAdminOrReadOnly
+from apps.products.api.v1.permissions import IsAdminOrReadOnly
 
 
 class ProductViewSet(viewsets.ModelViewSet):

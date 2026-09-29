@@ -1,5 +1,5 @@
 ﻿from rest_framework import serializers
-from ....models import Product
+from apps.products.models import Product
 
 
 class StockUpdateSerializer(serializers.ModelSerializer):

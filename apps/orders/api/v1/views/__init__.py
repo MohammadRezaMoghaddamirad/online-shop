@@ -1,4 +1,4 @@
-from .customer.order_viewset import OrderViewSet
-from .admin_order_viewset import AdminOrderViewSet
+from apps.orders.api.v1.views.customer.order_viewset import OrderViewSet
+from apps.orders.api.v1.views.admin_order_viewset import AdminOrderViewSet
 
 __all__ = ['OrderViewSet', 'AdminOrderViewSet']

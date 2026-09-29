@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 
-from ..serializers import RegisterSerializer, UserBriefSerializer
-from ....services.token_service import TokenService
+from apps.authentication.api.v1.serializers import RegisterSerializer, UserBriefSerializer
+from apps.authentication.services.token_service import TokenService
 
 User = get_user_model()
 

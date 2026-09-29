@@ -7,8 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
-from ....models import Order, OrderItem
-from ..serializers import OrderSerializer, CheckoutSerializer
+from apps.orders.models import Order, OrderItem
+from apps.orders.api.v1.serializers import OrderSerializer, CheckoutSerializer
 from apps.carts.models import Cart
 from apps.coupons.models import Coupon, CouponUsage
 

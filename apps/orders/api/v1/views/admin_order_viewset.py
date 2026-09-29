@@ -4,9 +4,9 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
-from ....models import Order
-from ..serializers import OrderSerializer, OrderStatusSerializer
-from ..permissions import IsAdmin
+from apps.orders.models import Order
+from apps.orders.api.v1.serializers import OrderSerializer, OrderStatusSerializer
+from apps.orders.api.v1.permissions import IsAdmin
 
 
 class AdminOrderViewSet(viewsets.ModelViewSet):

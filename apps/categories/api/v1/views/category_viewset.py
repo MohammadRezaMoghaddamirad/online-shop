@@ -2,9 +2,9 @@ from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from ....models import Category
-from ..serializers import CategorySerializer
-from ..permissions import IsAdminOrReadOnly
+from apps.categories.models import Category
+from apps.categories.api.v1.serializers import CategorySerializer
+from apps.categories.api.v1.permissions import IsAdminOrReadOnly
 
 
 class CategoryViewSet(viewsets.ModelViewSet):

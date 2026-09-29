@@ -1,5 +1,5 @@
 ﻿from rest_framework import serializers
-from ....models import Coupon
+from apps.coupons.models import Coupon
 
 
 class CouponSerializer(serializers.ModelSerializer):

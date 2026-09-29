@@ -2,9 +2,9 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from ....models import Coupon
-from ..serializers import CouponSerializer
-from ..permissions import IsAdmin
+from apps.coupons.models import Coupon
+from apps.coupons.api.v1.serializers import CouponSerializer
+from apps.coupons.api.v1.permissions import IsAdmin
 
 
 class CouponViewSet(viewsets.ModelViewSet):

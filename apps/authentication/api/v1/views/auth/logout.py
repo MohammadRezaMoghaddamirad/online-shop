@@ -2,7 +2,7 @@
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from ....services.token_service import TokenService
+from apps.authentication.services.token_service import TokenService
 
 
 class LogoutView(generics.GenericAPIView):
