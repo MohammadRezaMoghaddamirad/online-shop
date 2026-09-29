@@ -10,13 +10,13 @@ from drf_spectacular.views import (
 
 # ============ API v1 ============
 api_v1_patterns = [
-    path('auth/', include('apps.authentication.urls')),
-    path('accounts/', include('apps.accounts.urls')),
-    path('categories/', include('apps.categories.urls')),
-    path('products/', include('apps.products.urls')),
-    path('carts/', include('apps.carts.urls')),
-    path('coupons/', include('apps.coupons.urls')),
-    path('orders/', include('apps.orders.urls')),
+    path('auth/', include('apps.authentication.api.v1.urls')),
+    path('accounts/', include('apps.accounts.api.v1.urls')),
+    path('categories/', include('apps.categories.api.v1.urls')),
+    path('products/', include('apps.products.api.v1.urls')),
+    path('carts/', include('apps.carts.api.v1.urls')),
+    path('coupons/', include('apps.coupons.api.v1.urls')),
+    path('orders/', include('apps.orders.api.v1.urls')),
 ]
 
 urlpatterns = [
