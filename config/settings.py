@@ -1,11 +1,17 @@
+import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-j2b+)5&^75bdkdsa06fwhx&^#rwnrftyyjam0ot^9%ofd2nfq+'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+# ======== Environment ========
+ENVIRONMENT = os.environ.get('DJANGO_ENV', 'dev')
+load_dotenv(BASE_DIR / f'.env.{ENVIRONMENT}')
+
+SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-for-dev-only')
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -68,11 +74,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'shop_db',
-        'USER': 'postgres',
-        'PASSWORD': '12345678',       # ← پسورد واقعی خودتان
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
