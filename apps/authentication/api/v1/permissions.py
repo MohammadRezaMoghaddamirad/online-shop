@@ -2,8 +2,8 @@
 
 
 class IsAdmin(BasePermission):
-    """ÙÙ‚Ø· Ø§Ø¯Ù…ÛŒÙ†â€ŒÙ‡Ø§ Ø¯Ø³ØªØ±Ø³ÛŒ Ø¯Ø§Ø±Ù†Ø¯"""
-    message = 'ÙÙ‚Ø· Ù…Ø¯ÛŒØ±Ø§Ù† Ø¯Ø³ØªØ±Ø³ÛŒ Ø¯Ø§Ø±Ù†Ø¯.'
+    """فقط ادمین‌ها دسترسی دارند"""
+    message = 'فقط مدیران دسترسی دارند.'
 
     def has_permission(self, request, view):
         return bool(

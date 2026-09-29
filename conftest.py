@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from apps.categories.models import Category
 from apps.products.models import Product
 from apps.coupons.models import Coupon
-from datetime import datetime, timedelta
+from datetime import timedelta
 from django.utils import timezone
 
 User = get_user_model()
@@ -43,18 +43,21 @@ def customer_user(db):
     )
 
 
+# ============ Clients (مستقل برای هر کاربر) ============
 @pytest.fixture
-def admin_client(api_client, admin_user):
-    """کلاینت لاگین‌شده با ادمین"""
-    api_client.force_authenticate(user=admin_user)
-    return api_client
+def admin_client(admin_user):
+    """کلاینت لاگین‌شده با ادمین (مستقل)"""
+    client = APIClient()
+    client.force_authenticate(user=admin_user)
+    return client
 
 
 @pytest.fixture
-def customer_client(api_client, customer_user):
-    """کلاینت لاگین‌شده با کاربر عادی"""
-    api_client.force_authenticate(user=customer_user)
-    return api_client
+def customer_client(customer_user):
+    """کلاینت لاگین‌شده با کاربر عادی (مستقل)"""
+    client = APIClient()
+    client.force_authenticate(user=customer_user)
+    return client
 
 
 # ============ Categories ============

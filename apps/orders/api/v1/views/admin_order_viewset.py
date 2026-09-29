@@ -6,7 +6,7 @@ from rest_framework.filters import OrderingFilter
 
 from apps.orders.models import Order
 from apps.orders.api.v1.serializers import OrderSerializer, OrderStatusSerializer
-from apps.orders.api.v1.permissions import IsAdmin
+from apps.authentication.api.v1.permissions import IsAdmin
 
 
 class AdminOrderViewSet(viewsets.ModelViewSet):
