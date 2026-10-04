@@ -1,17 +1,13 @@
 import os
 from pathlib import Path
 from datetime import timedelta
-from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ======== Environment ========
-ENVIRONMENT = os.environ.get('DJANGO_ENV', 'dev')
-load_dotenv(BASE_DIR / f'.env.{ENVIRONMENT}')
-
-SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-for-dev-only')
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+# ======== Security ========
+SECRET_KEY = 'django-insecure-dev-only-key-change-in-production'
+DEBUG = True
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -30,14 +26,13 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Local apps
-    'apps.accounts', 
-    'apps.authentication',  
+    'apps.accounts',
+    'apps.authentication',
     'apps.categories',
     'apps.products',
     'apps.carts',
     'apps.coupons',
     'apps.orders',
-
 ]
 
 MIDDLEWARE = [
@@ -74,11 +69,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'NAME': 'shop_db',         # ← تغییر کرد (قبلاً online_shop)
+        'USER': 'postgres',
+        'PASSWORD': '12345678',    # ← تغییر کرد (قبلاً postgres)
+        'HOST': 'db',              # ← تغییر کرد (قبلاً localhost)
+        'PORT': '5432',            # ← تغییر کرد (قبلاً 5432 بود ولی درست شد)
     }
 }
 
@@ -123,14 +118,11 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
 # ======== Simple JWT ========
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(
-        minutes=int(os.environ.get('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', 30))
-    ),
-    'REFRESH_TOKEN_LIFETIME': timedelta(
-        days=int(os.environ.get('JWT_REFRESH_TOKEN_LIFETIME_DAYS', 7))
-    ),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -142,12 +134,36 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'API فروشگاه آنلاین',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
-}
-# ======== CORS ========
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
-CORS_ALLOW_CREDENTIALS = True
+    'SCHEMA_PATH_PREFIX': '/api/v1/',
+    'SCHEMA_PATH_PREFIX_TRIM': True,
 
-# اگر توکن یا کوکی می‌فرستید:
+    'TAGS': [
+        {'name': 'Auth',       'description': 'احراز هویت و ورود'},
+        {'name': 'Profile',    'description': 'پروفایل کاربر جاری'},
+        {'name': 'Users',      'description': 'مدیریت کاربران'},
+        {'name': 'Categories', 'description': 'دسته‌بندی محصولات'},
+        {'name': 'Products',   'description': 'محصولات'},
+        {'name': 'Carts',      'description': 'سبد خرید'},
+        {'name': 'Coupons',    'description': 'کدهای تخفیف'},
+        {'name': 'Orders',     'description': 'سفارشات'},
+    ],
+
+    # ✅ تغییر: PREPROCESSING → POSTPROCESSING
+    'POSTPROCESSING_HOOKS': [
+        'config.spectacular.custom_postprocessing_hook',
+    ],
+
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SORT_OPERATIONS': False,
+}
+
+# ======== CORS ========
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -160,6 +176,7 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
 # ======== Celery ========
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'

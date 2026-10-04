@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
+from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from apps.orders.models import Order, OrderItem
 from apps.orders.api.v1.serializers import OrderSerializer, CheckoutSerializer
@@ -13,8 +14,12 @@ from apps.carts.models import Cart
 from apps.coupons.models import Coupon, CouponUsage
 
 
+@extend_schema_view(
+    list=extend_schema(tags=['Orders']),
+    retrieve=extend_schema(tags=['Orders']),
+)
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):
-    """Ø³ÙØ§Ø±Ø´â€ŒÙ‡Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ"""
+    """سفارش‌های مشتری"""
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
@@ -23,39 +28,49 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ['-created_at']
 
     def get_queryset(self):
+        # ✅ این خط اضافه شد: جلوگیری از خطا در زمان ساخت schema
+        if getattr(self, 'swagger_fake_view', False):
+            return Order.objects.none()
+
         return Order.objects.filter(user=self.request.user).prefetch_related('items')
 
+    @extend_schema(
+        tags=['Orders'],
+        summary='ثبت سفارش از سبد خرید',
+        request=CheckoutSerializer,
+        responses={201: OrderSerializer},
+    )
     @action(detail=False, methods=['post'], url_path='checkout')
     def checkout(self, request):
-        """Ø«Ø¨Øª Ø³ÙØ§Ø±Ø´ Ø§Ø² Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯"""
+        """ثبت سفارش از سبد خرید"""
         serializer = CheckoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         coupon_code = serializer.validated_data.get('coupon_code', '').strip()
         shipping_cost = serializer.validated_data.get('shipping_cost', Decimal(50000))
 
-        # Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯
+        # سبد خرید
         cart = Cart.objects.filter(user=request.user).first()
         if not cart or not cart.items.exists():
             return Response(
-                {'detail': 'Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯ Ø®Ø§Ù„ÛŒ Ø§Ø³Øª.'},
+                {'detail': 'سبد خرید خالی است.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         with transaction.atomic():
             items = list(cart.items.select_related('product').select_for_update())
 
-            # Ø¨Ø±Ø±Ø³ÛŒ Ù…ÙˆØ¬ÙˆØ¯ÛŒ
+            # بررسی موجودی
             for item in items:
                 if not item.product.is_active:
                     return Response(
-                        {'detail': f'Ù…Ø­ØµÙˆÙ„ {item.product.name} ØºÛŒØ±ÙØ¹Ø§Ù„ Ø§Ø³Øª.'},
+                        {'detail': f'محصول {item.product.name} غیرفعال است.'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 if item.quantity > item.product.stock:
                     return Response(
-                        {'detail': f'Ù…ÙˆØ¬ÙˆØ¯ÛŒ {item.product.name} Ú©Ø§ÙÛŒ Ù†ÛŒØ³Øª. '
-                                   f'(Ù…ÙˆØ¬ÙˆØ¯ÛŒ: {item.product.stock})'},
+                        {'detail': f'موجودی {item.product.name} کافی نیست. '
+                                   f'(موجودی: {item.product.stock})'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
@@ -63,13 +78,13 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
             discount_amount = Decimal(0)
             coupon_obj = None
 
-            # Ø¨Ø±Ø±Ø³ÛŒ Ú©Ø¯ ØªØ®ÙÛŒÙ
+            # بررسی کد تخفیف
             if coupon_code:
                 try:
                     coupon_obj = Coupon.objects.get(code__iexact=coupon_code)
                 except Coupon.DoesNotExist:
                     return Response(
-                        {'detail': 'Ú©Ø¯ ØªØ®ÙÛŒÙ ÛŒØ§ÙØª Ù†Ø´Ø¯.'},
+                        {'detail': 'کد تخفیف یافت نشد.'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
@@ -86,7 +101,7 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
             if total < 0:
                 total = Decimal(0)
 
-            # Ø³Ø§Ø®Øª Ø³ÙØ§Ø±Ø´
+            # ساخت سفارش
             order = Order.objects.create(
                 user=request.user,
                 coupon=coupon_obj,
@@ -97,7 +112,7 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
                 status=Order.Status.PENDING,
             )
 
-            # ØªØ¨Ø¯ÛŒÙ„ CartItem Ø¨Ù‡ OrderItem + Ú©Ø§Ù‡Ø´ Ù…ÙˆØ¬ÙˆØ¯ÛŒ
+            # تبدیل CartItem به OrderItem + کاهش موجودی
             for item in items:
                 OrderItem.objects.create(
                     order=order,
@@ -109,7 +124,7 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
                 item.product.stock -= item.quantity
                 item.product.save(update_fields=['stock'])
 
-            # Ø«Ø¨Øª Ø§Ø³ØªÙØ§Ø¯Ù‡ Ø§Ø² Ú©Ø¯ ØªØ®ÙÛŒÙ
+            # ثبت استفاده از کد تخفیف
             if coupon_obj:
                 CouponUsage.objects.create(
                     coupon=coupon_obj,
@@ -117,7 +132,7 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
                     order=order,
                 )
 
-            # Ø®Ø§Ù„ÛŒ Ú©Ø±Ø¯Ù† Ø³Ø¨Ø¯
+            # خالی کردن سبد
             cart.items.all().delete()
 
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)

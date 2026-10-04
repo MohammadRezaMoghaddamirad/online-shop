@@ -1,9 +1,11 @@
 ﻿from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+
 from apps.carts.models import CartItem
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    """Ù†Ù…Ø§ÛŒØ´ Ø¢ÛŒØªÙ… Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯"""
+    """نمایش آیتم سبد خرید"""
     product_name = serializers.CharField(source='product.name', read_only=True)
     product_price = serializers.DecimalField(
         source='product.price',
@@ -19,5 +21,6 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = ('id', 'product', 'product_name', 'product_price',
                   'product_image', 'quantity', 'subtotal', 'created_at')
 
+    @extend_schema_field(serializers.DecimalField(max_digits=12, decimal_places=0))
     def get_subtotal(self, obj):
         return obj.subtotal

@@ -1,28 +1,52 @@
-﻿from rest_framework import generics, status
+﻿from rest_framework import generics, status, serializers
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, inline_serializer
 
 from apps.authentication.services.token_service import TokenService
 
 
 class LogoutView(generics.GenericAPIView):
-    """Ø®Ø±ÙˆØ¬ Ú©Ø§Ø±Ø¨Ø± â€” blacklist Ú©Ø±Ø¯Ù† Refresh Token"""
+    """خروج کاربر — blacklist کردن Refresh Token"""
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        tags=['Auth'],
+        summary='خروج کاربر',
+        description='Refresh Token را blacklist می‌کند.',
+        request=inline_serializer(
+            name='LogoutRequest',
+            fields={
+                'refresh': serializers.CharField(
+                    help_text='Refresh Token کاربر'
+                ),
+            },
+        ),
+        responses={
+            205: inline_serializer(
+                name='LogoutSuccessResponse',
+                fields={'detail': serializers.CharField()},
+            ),
+            400: inline_serializer(
+                name='LogoutErrorResponse',
+                fields={'detail': serializers.CharField()},
+            ),
+        },
+    )
     def post(self, request):
         refresh_token = request.data.get('refresh')
         if not refresh_token:
             return Response(
-                {'detail': 'ÙÛŒÙ„Ø¯ refresh Ù„Ø§Ø²Ù… Ø§Ø³Øª.'},
+                {'detail': 'فیلد refresh لازم است.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         if TokenService.blacklist_token(refresh_token):
             return Response(
-                {'detail': 'Ø®Ø±ÙˆØ¬ Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª Ø§Ù†Ø¬Ø§Ù… Ø´Ø¯.'},
+                {'detail': 'خروج با موفقیت انجام شد.'},
                 status=status.HTTP_205_RESET_CONTENT
             )
         return Response(
-            {'detail': 'ØªÙˆÚ©Ù† Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª.'},
+            {'detail': 'توکن نامعتبر است.'},
             status=status.HTTP_400_BAD_REQUEST
         )
