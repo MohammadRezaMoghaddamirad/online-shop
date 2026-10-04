@@ -5,15 +5,15 @@ services:
     container_name: online_shop_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: shop_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,19 +45,8 @@ services:
       - media_data:/app/media
     ports:
       - "8000:8000"
-    environment:
-      DEBUG: "True"
-      SECRET_KEY: "django-insecure-j2b+)5&^75bdkdsa06fwhx&^#rwnrftyyjam0ot^9%ofd2nfq+"
-      ALLOWED_HOSTS: "*"
-      DB_ENGINE: "django.db.backends.postgresql"
-      DB_NAME: "shop_db"
-      DB_USER: "postgres"
-      DB_PASSWORD: "12345678"
-      DB_HOST: "db"
-      DB_PORT: "5432"
-      CELERY_BROKER_URL: "redis://redis:6379/0"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-      CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000"
+    env_file:
+      - .env                              # ←  همه چیز از .env
     depends_on:
       db:
         condition: service_healthy
@@ -70,16 +59,8 @@ services:
     container_name: online_shop_celery
     restart: unless-stopped
     command: celery -A config worker -l INFO --pool=solo
-    environment:
-      DEBUG: "True"
-      SECRET_KEY: "django-insecure-j2b+)5&^75bdkdsa06fwhx&^#rwnrftyyjam0ot^9%ofd2nfq+"
-      DB_NAME: "shop_db"
-      DB_USER: "postgres"
-      DB_PASSWORD: "12345678"
-      DB_HOST: "db"
-      DB_PORT: "5432"
-      CELERY_BROKER_URL: "redis://redis:6379/0"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+    env_file:
+      - .env                              # ←  همین‌طور اینجا
     depends_on:
       - db
       - redis
