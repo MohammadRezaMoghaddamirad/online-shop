@@ -37,7 +37,7 @@ class TestRegister:
         })
 
         assert response.status_code == 400
-        assert 'password' in response.data
+        assert 'password' in response.data['error']['details']
 
     def test_register_duplicate_username(self, api_client, customer_user):
         """username تکراری"""
@@ -49,4 +49,4 @@ class TestRegister:
         })
 
         assert response.status_code == 400
-        assert 'username' in response.data
+        assert 'username' in response.data['error']['details']

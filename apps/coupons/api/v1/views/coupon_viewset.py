@@ -1,4 +1,4 @@
-﻿from rest_framework import viewsets
+from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
@@ -8,7 +8,7 @@ from apps.coupons.api.v1.permissions import IsAdmin
 
 
 class CouponViewSet(viewsets.ModelViewSet):
-    """Ù…Ø¯ÛŒØ±ÛŒØª Ú©Ø¯Ù‡Ø§ÛŒ ØªØ®ÙÛŒÙ (ÙÙ‚Ø· Ø§Ø¯Ù…ÛŒÙ†)"""
+    """مدیریت کدهای تخفیف (فقط ادمین)"""
     queryset = Coupon.objects.all().order_by('-created_at')
     serializer_class = CouponSerializer
     permission_classes = [IsAdmin]

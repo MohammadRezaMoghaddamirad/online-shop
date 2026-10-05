@@ -1,9 +1,11 @@
 ﻿from rest_framework import generics, status, serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, inline_serializer
 
 from apps.authentication.services.token_service import TokenService
+from core.exceptions import BusinessRuleError
 
 
 class LogoutView(generics.GenericAPIView):
@@ -36,17 +38,11 @@ class LogoutView(generics.GenericAPIView):
     def post(self, request):
         refresh_token = request.data.get('refresh')
         if not refresh_token:
-            return Response(
-                {'detail': 'فیلد refresh لازم است.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({'refresh': 'فیلد refresh لازم است.'})
 
         if TokenService.blacklist_token(refresh_token):
             return Response(
                 {'detail': 'خروج با موفقیت انجام شد.'},
                 status=status.HTTP_205_RESET_CONTENT
             )
-        return Response(
-            {'detail': 'توکن نامعتبر است.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        raise BusinessRuleError('توکن نامعتبر است.')

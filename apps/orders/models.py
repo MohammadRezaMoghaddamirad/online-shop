@@ -1,11 +1,11 @@
-﻿from django.db import models
+from django.db import models
 from django.conf import settings
 from apps.products.models import Product
 from apps.coupons.models import Coupon
 
 
 class Order(models.Model):
-    """Ø³ÙØ§Ø±Ø´"""
+    """سفارش"""
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending'
         PAID = 'paid', 'Paid'
@@ -45,7 +45,7 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    """Ø¢ÛŒØªÙ… Ø³ÙØ§Ø±Ø´ (snapshot Ø§Ø² Ù…Ø­ØµÙˆÙ„)"""
+    """آیتم سفارش (snapshot از محصول)"""
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
     product_name = models.CharField(max_length=200)          # snapshot

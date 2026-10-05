@@ -29,7 +29,7 @@ class OrderSerializer(serializers.ModelSerializer):
                   'shipping_cost', 'total_amount', 'status', 'status_display',
                   'items', 'created_at', 'updated_at')
         read_only_fields = (
-            'id', 'user', 'subtotal', 'discount_amount',
+            'id', 'user', 'subtotal', 'discount_amount', 'shipping_cost',
             'total_amount', 'items', 'created_at', 'updated_at'
         )
 
@@ -37,12 +37,6 @@ class OrderSerializer(serializers.ModelSerializer):
 class CheckoutSerializer(serializers.Serializer):
     """ورودی Checkout"""
     coupon_code = serializers.CharField(required=False, allow_blank=True)
-    shipping_cost = serializers.DecimalField(
-        max_digits=12,
-        decimal_places=0,
-        required=False,
-        default=50000
-    )
 
 
 class OrderStatusSerializer(serializers.ModelSerializer):

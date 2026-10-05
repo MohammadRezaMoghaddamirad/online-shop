@@ -1,9 +1,9 @@
-﻿from rest_framework import serializers
+from rest_framework import serializers
 from apps.products.models import Product
 
 
 class ProductListSerializer(serializers.ModelSerializer):
-    """Ù†Ù…Ø§ÛŒØ´ Ø®Ù„Ø§ØµÙ‡ Ù…Ø­ØµÙˆÙ„ (Ø¨Ø±Ø§ÛŒ Ù„ÛŒØ³Øª)"""
+    """نمایش خلاصه محصول (برای لیست)"""
     category_name = serializers.CharField(source='category.name', read_only=True)
     in_stock = serializers.BooleanField(read_only=True)
 

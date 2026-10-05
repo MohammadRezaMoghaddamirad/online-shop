@@ -1,9 +1,9 @@
-﻿from django.db import models
+from django.db import models
 from apps.categories.models import Category
 
 
 class Product(models.Model):
-    """Ù…Ø¯Ù„ Ù…Ø­ØµÙˆÙ„"""
+    """مدل محصول"""
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=12, decimal_places=0)

@@ -1,6 +1,5 @@
-﻿
-from drf_spectacular.utils import extend_schema
-from rest_framework import generics, status
+﻿from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import generics, status, serializers
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
@@ -14,7 +13,27 @@ from apps.authentication.services.token_service import TokenService
 User = get_user_model()
 
 
-@extend_schema(tags=['Auth'])
+@extend_schema(
+    tags=['احراز هویت'],
+    summary='ثبت‌نام کاربر جدید',
+    description='با وارد کردن نام کاربری، ایمیل و رمز عبور، حساب کاربری جدید بسازید. پس از ثبت‌نام، توکن‌ها به صورت خودکار صادر می‌شوند.',
+    request=RegisterSerializer,
+    responses={
+        201: inline_serializer(
+            name='RegisterResponse',
+            fields={
+                'user': UserBriefSerializer(),
+                'refresh': serializers.CharField(help_text='توکن تازه‌سازی'),
+                'access': serializers.CharField(help_text='توکن دسترسی'),
+                'message': serializers.CharField(help_text='پیام موفقیت'),
+            },
+        ),
+        400: inline_serializer(
+            name='RegisterErrorResponse',
+            fields={'detail': serializers.CharField(help_text='پیام خطا')},
+        ),
+    },
+)
 class RegisterView(generics.CreateAPIView):
     """ثبت‌نام کاربر جدید"""
     queryset = User.objects.all()

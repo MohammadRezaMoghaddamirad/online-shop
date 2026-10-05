@@ -157,6 +157,10 @@ SPECTACULAR_SETTINGS = {
     'SORT_OPERATIONS': False,
 }
 
+# ======== Shop ========
+# هزینه ارسال ثابت (تومان) - فقط سمت سرور تعیین می‌شود، نه توسط کاربر
+SHOP_SHIPPING_COST = 50000
+
 # ======== CORS ========
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',

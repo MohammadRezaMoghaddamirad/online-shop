@@ -1,4 +1,4 @@
-﻿from rest_framework import viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -10,7 +10,7 @@ from apps.authentication.api.v1.permissions import IsAdmin
 
 
 class AdminOrderViewSet(viewsets.ModelViewSet):
-    """Ù…Ø¯ÛŒØ±ÛŒØª Ø³ÙØ§Ø±Ø´â€ŒÙ‡Ø§ (ÙÙ‚Ø· Ø§Ø¯Ù…ÛŒÙ†)"""
+    """مدیریت سفارش‌ها (فقط ادمین)"""
     queryset = Order.objects.all().prefetch_related('items')
     serializer_class = OrderSerializer
     permission_classes = [IsAdmin]
@@ -21,7 +21,7 @@ class AdminOrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'], url_path='status')
     def update_status(self, request, pk=None):
-        """ØªØºÛŒÛŒØ± ÙˆØ¶Ø¹ÛŒØª Ø³ÙØ§Ø±Ø´"""
+        """تغییر وضعیت سفارش"""
         order = self.get_object()
         serializer = OrderStatusSerializer(order, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

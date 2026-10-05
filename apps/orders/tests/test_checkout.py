@@ -21,7 +21,6 @@ class TestCheckout:
 
         response = customer_client.post(self.checkout_url, {
             'coupon_code': coupon.code,
-            'shipping_cost': 50000
         })
 
         assert response.status_code == 201
@@ -33,9 +32,7 @@ class TestCheckout:
 
     def test_checkout_empty_cart(self, customer_client):
         """Checkout با سبد خالی"""
-        response = customer_client.post(self.checkout_url, {
-            'shipping_cost': 50000
-        })
+        response = customer_client.post(self.checkout_url, {})
 
         assert response.status_code == 400
 
@@ -49,9 +46,7 @@ class TestCheckout:
             'quantity': 3
         })
 
-        customer_client.post(self.checkout_url, {
-            'shipping_cost': 50000
-        })
+        customer_client.post(self.checkout_url, {})
 
         product.refresh_from_db()
         assert product.stock == initial_stock - 3
@@ -63,12 +58,42 @@ class TestCheckout:
             'quantity': 1
         })
 
-        customer_client.post(self.checkout_url, {
-            'shipping_cost': 50000
-        })
+        customer_client.post(self.checkout_url, {})
 
         response = customer_client.get('/api/v1/carts/')
         assert response.data['items'] == []
+
+    @pytest.mark.parametrize('fake_shipping', [0, -500000, 1])
+    def test_checkout_ignores_client_shipping_cost(
+            self, customer_client, product, fake_shipping):
+        """هزینه ارسال از ورودی کاربر گرفته نمی‌شود"""
+        customer_client.post(self.cart_add_url, {
+            'product_id': product.id,
+            'quantity': 1
+        })
+
+        response = customer_client.post(self.checkout_url, {
+            'shipping_cost': fake_shipping
+        })
+
+        assert response.status_code == 201
+        assert response.data['shipping_cost'] == '50000'
+        assert response.data['total_amount'] == '50050000'
+
+    def test_checkout_uses_shipping_cost_from_settings(
+            self, customer_client, product, settings):
+        """هزینه ارسال از SHOP_SHIPPING_COST خوانده می‌شود"""
+        settings.SHOP_SHIPPING_COST = 70000
+        customer_client.post(self.cart_add_url, {
+            'product_id': product.id,
+            'quantity': 1
+        })
+
+        response = customer_client.post(self.checkout_url, {})
+
+        assert response.status_code == 201
+        assert response.data['shipping_cost'] == '70000'
+        assert response.data['total_amount'] == '50070000'
 
 
 @pytest.mark.django_db
@@ -81,9 +106,7 @@ class TestAdminOrders:
             'product_id': product.id,
             'quantity': 1
         })
-        customer_client.post('/api/v1/orders/checkout/', {
-            'shipping_cost': 50000
-        })
+        customer_client.post('/api/v1/orders/checkout/', {})
 
         response = admin_client.get('/api/v1/orders/admin/')
 

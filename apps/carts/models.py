@@ -1,10 +1,10 @@
-﻿from django.db import models
+from django.db import models
 from django.conf import settings
 from apps.products.models import Product
 
 
 class Cart(models.Model):
-    """Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯ Ù‡Ø± Ú©Ø§Ø±Ø¨Ø±"""
+    """سبد خرید هر کاربر"""
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -26,7 +26,7 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
-    """Ø¢ÛŒØªÙ…â€ŒÙ‡Ø§ÛŒ Ø¯Ø§Ø®Ù„ Ø³Ø¨Ø¯ Ø®Ø±ÛŒØ¯"""
+    """آیتم‌های داخل سبد خرید"""
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)

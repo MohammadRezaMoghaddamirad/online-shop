@@ -1,5 +1,11 @@
-from apps.authentication.api.v1.views.auth.register import RegisterView
-from apps.authentication.api.v1.views.auth.login import LoginView
-from apps.authentication.api.v1.views.auth.logout import LogoutView
+from .login import LoginView
+from .logout import LogoutView
+from .register import RegisterView
+from .token_refresh import TokenRefreshCustomView
 
-__all__ = ['RegisterView', 'LoginView', 'LogoutView']
+__all__ = [
+    'LoginView',
+    'LogoutView',
+    'RegisterView',
+    'TokenRefreshCustomView',
+]

@@ -242,7 +242,7 @@ log("\n📌 مرحله ۷: سفارش‌ها", Fore.CYAN)
 
 # Checkout با کد تخفیف جدید (که کاربر reza هنوز استفاده نکرده)
 r = test("ثبت سفارش (Checkout)", "POST", "/orders/checkout/", 201,
-         {"coupon_code": created_coupon_code, "shipping_cost": 50000},
+         {"coupon_code": created_coupon_code},
          token=customer_token)
 if r and r.status_code == 201:
     created_order_id = r.json().get("id")

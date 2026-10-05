@@ -1,10 +1,10 @@
-﻿from rest_framework import serializers
+from rest_framework import serializers
 from apps.products.models import Product
 from apps.categories.api.v1.serializers import CategorySerializer
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
-    """Ù†Ù…Ø§ÛŒØ´ Ú©Ø§Ù…Ù„ Ù…Ø­ØµÙˆÙ„ + ÙˆÛŒØ±Ø§ÛŒØ´"""
+    """نمایش کامل محصول + ویرایش"""
     category = CategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=__import__('apps.categories.models', fromlist=['Category']).Category.objects.all(),
@@ -22,10 +22,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def validate_price(self, value):
         if value <= 0:
-            raise serializers.ValidationError('Ù‚ÛŒÙ…Øª Ø¨Ø§ÛŒØ¯ Ø¨Ø²Ø±Ú¯ØªØ± Ø§Ø² ØµÙØ± Ø¨Ø§Ø´Ø¯.')
+            raise serializers.ValidationError('قیمت باید بزرگتر از صفر باشد.')
         return value
 
     def validate_stock(self, value):
         if value < 0:
-            raise serializers.ValidationError('Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ù†Ù…ÛŒâ€ŒØªÙˆØ§Ù†Ø¯ Ù…Ù†ÙÛŒ Ø¨Ø§Ø´Ø¯.')
+            raise serializers.ValidationError('موجودی نمی‌تواند منفی باشد.')
         return value

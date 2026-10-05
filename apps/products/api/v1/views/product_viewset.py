@@ -1,4 +1,4 @@
-﻿from rest_framework import viewsets, status
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -14,7 +14,7 @@ from apps.products.api.v1.permissions import IsAdminOrReadOnly
 
 
 class ProductViewSet(viewsets.ModelViewSet):
-    """Ù…Ø¯ÛŒØ±ÛŒØª Ù…Ø­ØµÙˆÙ„Ø§Øª"""
+    """مدیریت محصولات"""
     queryset = Product.objects.select_related('category').all()
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -34,7 +34,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = Product.objects.select_related('category').all()
 
-        # Ù…Ø´ØªØ±ÛŒØ§Ù† ÙÙ‚Ø· Ù…Ø­ØµÙˆÙ„Ø§Øª ÙØ¹Ø§Ù„ Ø§Ø² Ø¯Ø³ØªÙ‡â€ŒÙ‡Ø§ÛŒ ÙØ¹Ø§Ù„ Ø±Ø§ Ù…ÛŒâ€ŒØ¨ÛŒÙ†Ù†Ø¯
+        # مشتریان فقط محصولات فعال از دسته‌های فعال را می‌بینند
         if not (user.is_authenticated and
                 (user.is_superuser or user.role == 'admin')):
             qs = qs.filter(is_active=True, category__is_active=True)
@@ -43,7 +43,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'], url_path='stock')
     def update_stock(self, request, pk=None):
-        """ÙˆÛŒØ±Ø§ÛŒØ´ Ù…ÙˆØ¬ÙˆØ¯ÛŒ (ÙÙ‚Ø· Ø§Ø¯Ù…ÛŒÙ†)"""
+        """ویرایش موجودی (فقط ادمین)"""
         product = self.get_object()
         serializer = StockUpdateSerializer(product, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)

@@ -1,8 +1,8 @@
-﻿from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class TokenService:
-    """Ø³Ø±ÙˆÛŒØ³ Ù…Ø¯ÛŒØ±ÛŒØª ØªÙˆÚ©Ù†â€ŒÙ‡Ø§"""
+    """سرویس مدیریت توکن‌ها"""
 
     @staticmethod
     def generate_tokens_for_user(user):

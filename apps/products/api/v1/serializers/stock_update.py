@@ -1,9 +1,9 @@
-﻿from rest_framework import serializers
+from rest_framework import serializers
 from apps.products.models import Product
 
 
 class StockUpdateSerializer(serializers.ModelSerializer):
-    """ÙÙ‚Ø· Ø¨Ø±Ø§ÛŒ ÙˆÛŒØ±Ø§ÛŒØ´ Ù…ÙˆØ¬ÙˆØ¯ÛŒ"""
+    """فقط برای ویرایش موجودی"""
 
     class Meta:
         model = Product
@@ -11,5 +11,5 @@ class StockUpdateSerializer(serializers.ModelSerializer):
 
     def validate_stock(self, value):
         if value < 0:
-            raise serializers.ValidationError('Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ù†Ù…ÛŒâ€ŒØªÙˆØ§Ù†Ø¯ Ù…Ù†ÙÛŒ Ø¨Ø§Ø´Ø¯.')
+            raise serializers.ValidationError('موجودی نمی‌تواند منفی باشد.')
         return value

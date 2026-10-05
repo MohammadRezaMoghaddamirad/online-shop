@@ -1,11 +1,11 @@
-﻿from rest_framework import serializers
+from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    """Ø³Ø±ÛŒØ§Ù„Ø§ÛŒØ²Ø± Ø«Ø¨Øªâ€ŒÙ†Ø§Ù… Ú©Ø§Ø±Ø¨Ø± Ø¬Ø¯ÛŒØ¯"""
+    """سریالایزر ثبت‌نام کاربر جدید"""
     password = serializers.CharField(write_only=True, min_length=8)
     password2 = serializers.CharField(write_only=True)
 
@@ -15,12 +15,12 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
-            raise serializers.ValidationError({'password': 'Ø±Ù…Ø²Ù‡Ø§ÛŒ Ø¹Ø¨ÙˆØ± ÛŒÚ©Ø³Ø§Ù† Ù†ÛŒØ³ØªÙ†Ø¯.'})
+            raise serializers.ValidationError({'password': 'رمزهای عبور یکسان نیستند.'})
         return attrs
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError('Ø§ÛŒÙ† Ø§ÛŒÙ…ÛŒÙ„ Ù‚Ø¨Ù„Ø§Ù‹ Ø«Ø¨Øª Ø´Ø¯Ù‡ Ø§Ø³Øª.')
+            raise serializers.ValidationError('این ایمیل قبلاً ثبت شده است.')
         return value
 
     def create(self, validated_data):

@@ -1,4 +1,5 @@
 ﻿from decimal import Decimal
+from django.conf import settings
 from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -12,6 +13,7 @@ from apps.orders.models import Order, OrderItem
 from apps.orders.api.v1.serializers import OrderSerializer, CheckoutSerializer
 from apps.carts.models import Cart
 from apps.coupons.models import Coupon, CouponUsage
+from core.exceptions import BusinessRuleError
 
 
 @extend_schema_view(
@@ -47,15 +49,13 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         coupon_code = serializer.validated_data.get('coupon_code', '').strip()
-        shipping_cost = serializer.validated_data.get('shipping_cost', Decimal(50000))
+        # هزینه ارسال ثابت و سمت سرور است (ورودی کاربر نادیده گرفته می‌شود)
+        shipping_cost = Decimal(settings.SHOP_SHIPPING_COST)
 
         # سبد خرید
         cart = Cart.objects.filter(user=request.user).first()
         if not cart or not cart.items.exists():
-            return Response(
-                {'detail': 'سبد خرید خالی است.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise BusinessRuleError('سبد خرید خالی است.')
 
         with transaction.atomic():
             items = list(cart.items.select_related('product').select_for_update())
@@ -63,15 +63,13 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
             # بررسی موجودی
             for item in items:
                 if not item.product.is_active:
-                    return Response(
-                        {'detail': f'محصول {item.product.name} غیرفعال است.'},
-                        status=status.HTTP_400_BAD_REQUEST
+                    raise BusinessRuleError(
+                        f'محصول {item.product.name} غیرفعال است.'
                     )
                 if item.quantity > item.product.stock:
-                    return Response(
-                        {'detail': f'موجودی {item.product.name} کافی نیست. '
-                                   f'(موجودی: {item.product.stock})'},
-                        status=status.HTTP_400_BAD_REQUEST
+                    raise BusinessRuleError(
+                        f'موجودی {item.product.name} کافی نیست. '
+                        f'(موجودی: {item.product.stock})'
                     )
 
             subtotal = sum(item.subtotal for item in items)
@@ -83,17 +81,11 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
                 try:
                     coupon_obj = Coupon.objects.get(code__iexact=coupon_code)
                 except Coupon.DoesNotExist:
-                    return Response(
-                        {'detail': 'کد تخفیف یافت نشد.'},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    raise BusinessRuleError('کد تخفیف یافت نشد.')
 
                 valid, err = coupon_obj.is_valid(order_amount=subtotal, user=request.user)
                 if not valid:
-                    return Response(
-                        {'detail': err},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    raise BusinessRuleError(err)
 
                 discount_amount = coupon_obj.calculate_discount(subtotal)
 
