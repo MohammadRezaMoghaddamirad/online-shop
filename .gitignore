@@ -65,3 +65,9 @@ dmypy.json
 # ============ Backup Files ============
 *.bak
 *.backup
+# Duplicate folders (moved to apps/)
+cart/
+catalog/
+coupons/
+orders/
+users/
