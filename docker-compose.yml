@@ -1,0 +1,74 @@
+services:
+  # ======== PostgreSQL Database ========
+  db:
+    image: postgres:16-alpine
+    container_name: online_shop_db
+    restart: unless-stopped
+    env_file:
+      - .env.dev
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ======== Redis (Broker) ========
+  redis:
+    image: redis:7-alpine
+    container_name: online_shop_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ======== Django Web ========
+  web:
+    build: .
+    container_name: online_shop_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - media_data:/app/media
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.dev
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ======== Celery Worker ========
+  celery:
+    build: .
+    container_name: online_shop_celery
+    restart: unless-stopped
+    command: celery -A config worker -l INFO --pool=solo
+    env_file:
+      - .env.dev
+    depends_on:
+      - db
+      - redis
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_data:

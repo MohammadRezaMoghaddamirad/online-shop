@@ -1,0 +1,138 @@
+from decimal import Decimal
+from django.conf import settings
+from django.db import IntegrityError, transaction
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
+from drf_spectacular.utils import extend_schema, extend_schema_view
+
+from apps.orders.models import Order, OrderItem
+from apps.orders.api.v1.serializers import OrderSerializer, CheckoutSerializer
+from apps.carts.models import Cart
+from apps.coupons.models import Coupon, CouponUsage
+from core.exceptions import BusinessRuleError
+
+
+@extend_schema_view(
+    list=extend_schema(tags=['Orders']),
+    retrieve=extend_schema(tags=['Orders']),
+)
+class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+    """سفارش‌های مشتری"""
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['status']
+    ordering_fields = ['created_at', 'total_amount']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        # ✅ این خط اضافه شد: جلوگیری از خطا در زمان ساخت schema
+        if getattr(self, 'swagger_fake_view', False):
+            return Order.objects.none()
+
+        return Order.objects.filter(user=self.request.user).prefetch_related('items')
+
+    @extend_schema(
+        tags=['Orders'],
+        summary='ثبت سفارش از سبد خرید',
+        request=CheckoutSerializer,
+        responses={201: OrderSerializer},
+    )
+    @action(detail=False, methods=['post'], url_path='checkout')
+    def checkout(self, request):
+        """ثبت سفارش از سبد خرید"""
+        serializer = CheckoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        coupon_code = serializer.validated_data.get('coupon_code', '').strip()
+        # هزینه ارسال ثابت و سمت سرور است (ورودی کاربر نادیده گرفته می‌شود)
+        shipping_cost = Decimal(settings.SHOP_SHIPPING_COST)
+
+        # سبد خرید
+        cart = Cart.objects.filter(user=request.user).first()
+        if not cart or not cart.items.exists():
+            raise BusinessRuleError('سبد خرید خالی است.')
+
+        with transaction.atomic():
+            items = list(
+                cart.items.select_related('product', 'product__category')
+                .select_for_update(of=('self', 'product'))
+                .order_by('product_id')  # ترتیب ثابت قفل‌ها => جلوگیری از deadlock
+            )
+
+            # بررسی موجودی
+            for item in items:
+                if not item.product.is_active or not item.product.category.is_active:
+                    raise BusinessRuleError(
+                        f'محصول {item.product.name} غیرفعال است.'
+                    )
+                if item.quantity > item.product.stock:
+                    raise BusinessRuleError(
+                        f'موجودی {item.product.name} کافی نیست. '
+                        f'(موجودی: {item.product.stock})'
+                    )
+
+            subtotal = sum(item.subtotal for item in items)
+            discount_amount = Decimal(0)
+            coupon_obj = None
+
+            # بررسی کد تخفیف
+            if coupon_code:
+                try:
+                    coupon_obj = Coupon.objects.get(code__iexact=coupon_code)
+                except Coupon.DoesNotExist:
+                    raise BusinessRuleError('کد تخفیف یافت نشد.')
+
+                valid, err = coupon_obj.is_valid(order_amount=subtotal, user=request.user)
+                if not valid:
+                    raise BusinessRuleError(err)
+
+                discount_amount = coupon_obj.calculate_discount(subtotal)
+
+            total = subtotal - discount_amount + shipping_cost
+            if total < 0:
+                total = Decimal(0)
+
+            # ساخت سفارش
+            order = Order.objects.create(
+                user=request.user,
+                coupon=coupon_obj,
+                subtotal=subtotal,
+                discount_amount=discount_amount,
+                shipping_cost=shipping_cost,
+                total_amount=total,
+                status=Order.Status.PENDING,
+            )
+
+            # تبدیل CartItem به OrderItem + کاهش موجودی
+            for item in items:
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    product_name=item.product.name,
+                    product_price=item.product.price,
+                    quantity=item.quantity,
+                )
+                item.product.stock -= item.quantity
+                item.product.save(update_fields=['stock', 'updated_at'])
+
+            # ثبت استفاده از کد تخفیف
+            if coupon_obj:
+                try:
+                    with transaction.atomic():
+                        CouponUsage.objects.create(
+                            coupon=coupon_obj,
+                            user=request.user,
+                            order=order,
+                        )
+                except IntegrityError:
+                    raise BusinessRuleError('این کد قبلاً توسط شما استفاده شده است.')
+
+            # خالی کردن سبد
+            cart.items.all().delete()
+
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
