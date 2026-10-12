@@ -1,5 +1,8 @@
 from django.db import models
 from apps.categories.models import Category
+from django.contrib.postgres.indexes import GinIndex
+from imagekit.models import ImageSpecField
+from imagekit.processors import ResizeToFill
 
 
 class Product(models.Model):
@@ -8,6 +11,12 @@ class Product(models.Model):
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=12, decimal_places=0)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
+    thumbnail = ImageSpecField(
+        source='image',
+        processors=[ResizeToFill(300, 300)],
+        format='JPEG',
+        options={'quality': 80},
+    )
     category = models.ForeignKey(
         Category,
         on_delete=models.PROTECT,
@@ -27,6 +36,13 @@ class Product(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            GinIndex(
+                fields=['name'],
+                opclasses=['gin_trgm_ops'],
+                name='product_name_trgm_idx',
+            ),
+        ]
 
     def __str__(self):
         return self.name

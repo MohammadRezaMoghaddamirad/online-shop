@@ -1,25 +1,27 @@
-﻿from rest_framework import viewsets, status
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import OrderingFilter
 
 from apps.products.models import Product
+from apps.products.api.v1.filters import ProductSearchFilter
 from apps.products.api.v1.serializers import (
     ProductListSerializer,
     ProductDetailSerializer,
-    StockUpdateSerializer
+    StockUpdateSerializer,
 )
 from apps.products.api.v1.permissions import IsAdminOrReadOnly
 
 
 class ProductViewSet(viewsets.ModelViewSet):
-    """مدیریت محصولات"""
+    """Product management"""
     queryset = Product.objects.select_related('category', 'brand').all()
     permission_classes = [IsAdminOrReadOnly]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    # ProductSearchFilter must come after OrderingFilter so that ranking by
+    # similarity overrides the default ordering.
+    filter_backends = [DjangoFilterBackend, OrderingFilter, ProductSearchFilter]
     filterset_fields = ['category', 'brand', 'is_active']
-    search_fields = ['name', 'description']
     ordering_fields = ['price', 'name', 'created_at', 'stock']
     ordering = ['-created_at']
 
@@ -34,7 +36,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = Product.objects.select_related('category', 'brand').all()
 
-        # مشتریان فقط محصولات فعال از دسته‌های فعال را می‌بینند
+        # Customers only see active products from active categories
         if not (user.is_authenticated and
                 (user.is_superuser or user.role == 'admin')):
             qs = qs.filter(is_active=True, category__is_active=True)
@@ -43,7 +45,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'], url_path='stock')
     def update_stock(self, request, pk=None):
-        """ویرایش موجودی (فقط ادمین)"""
+        """Update stock (admin only)"""
         product = self.get_object()
         serializer = StockUpdateSerializer(product, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
