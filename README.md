@@ -1,4 +1,5 @@
 # Online Shop API (Django REST Framework)
+https://online-shop-delta-sandy.vercel.app/
 
 فروشگاه آنلاین با دو نقش **Customer** و **Admin**، احراز هویت JWT، سبد خرید، کد تخفیف، سفارش و مدیریت موجودی.
 
