@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'apps.coupons',
     'apps.orders',
     'imagekit',
+    'apps.promo_cards',
 ]
 
 MIDDLEWARE = [

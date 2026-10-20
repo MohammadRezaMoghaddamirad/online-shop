@@ -3,6 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from rest_framework import serializers
+from core.validators import normalize_email
 
 User = get_user_model()
 
@@ -15,7 +16,7 @@ class RegisterSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
     def validate_email(self, value):
-        value = value.strip().lower()
+        value = normalize_email(value)
         if (User.objects.filter(email__iexact=value).exists()
                 or User.objects.filter(username__iexact=value).exists()):
             raise serializers.ValidationError('این ایمیل قبلاً ثبت شده است.')

@@ -2,9 +2,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.utils.encoding import force_str
-from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
+
+from core.validators import normalize_email
 
 User = get_user_model()
 
@@ -14,18 +14,18 @@ class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=150)
 
     def validate_email(self, value):
-        return value.strip().lower()
+        return normalize_email(value)
 
 
 class ResetPasswordSerializer(serializers.Serializer):
-    """تعیین رمز جدید با uid و توکن دریافتی از ایمیل"""
-    uid = serializers.CharField()
+    """تعیین رمز جدید با id کاربر و توکن دریافتی از ایمیل"""
+    id = serializers.CharField()
     token = serializers.CharField()
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        user = self._get_user(attrs['uid'])
+        user = self._get_user(attrs['id'])
         if user is None or not default_token_generator.check_token(user, attrs['token']):
             raise serializers.ValidationError(
                 {'token': 'لینک بازیابی نامعتبر است یا منقضی شده است.'}
@@ -43,9 +43,8 @@ class ResetPasswordSerializer(serializers.Serializer):
         return attrs
 
     @staticmethod
-    def _get_user(uidb64):
+    def _get_user(user_id):
         try:
-            pk = force_str(urlsafe_base64_decode(uidb64))
-            return User.objects.get(pk=pk, is_active=True)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return User.objects.get(pk=user_id, is_active=True)
+        except (TypeError, ValueError, OverflowError, DjangoValidationError, User.DoesNotExist):
             return None

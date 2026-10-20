@@ -1,51 +1,65 @@
-from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
-from django.contrib.auth.tokens import default_token_generator
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.utils.encoding import force_str
-from django.utils.http import urlsafe_base64_decode
-from rest_framework import serializers
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-User = get_user_model()
+from apps.authentication.api.v1.serializers import (
+    ForgotPasswordSerializer,
+    ResetPasswordSerializer,
+)
+from apps.authentication.services.password_reset_service import PasswordResetService
+
+MessageResponse = inline_serializer(
+    name='PasswordMessageResponse',
+    fields={'message': serializers.CharField()},
+)
 
 
-class ForgotPasswordSerializer(serializers.Serializer):
-    """درخواست لینک بازیابی رمز عبور"""
-    email = serializers.EmailField(max_length=150)
+@extend_schema(
+    tags=['Auth'],
+    summary='درخواست بازیابی رمز عبور',
+    description=(
+        'ایمیل را بفرستید. اگر حسابی با این ایمیل وجود داشته باشد، توکن بازیابی '
+        'برایش ساخته می‌شود (ارسال نوتیفیکیشن بعداً اضافه می‌شود). '
+        'پاسخ همیشه یکسان است تا وجود حساب لو نرود.'
+    ),
+    request=ForgotPasswordSerializer,
+    responses={200: MessageResponse},
+)
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
 
-    def validate_email(self, value):
-        return value.strip().lower()
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        PasswordResetService.request_reset(serializer.validated_data['email'])
+        return Response(
+            {'message': 'اگر حسابی با این ایمیل وجود داشته باشد، درخواست بازیابی رمز عبور برای آن ثبت شد.'},
+            status=status.HTTP_200_OK,
+        )
 
 
-class ResetPasswordSerializer(serializers.Serializer):
-    """تعیین رمز جدید با uid و توکن دریافتی از ایمیل"""
-    uid = serializers.CharField()
-    token = serializers.CharField()
-    password = serializers.CharField(write_only=True, min_length=8)
-    confirm_password = serializers.CharField(write_only=True)
+@extend_schema(
+    tags=['Auth'],
+    summary='تعیین رمز عبور جدید',
+    description='id و token از لینک ایمیل گرفته می‌شوند. بعد از موفقیت، نشست‌های قبلی (refresh tokenها) باطل می‌شوند.',
+    request=ResetPasswordSerializer,
+    responses={200: MessageResponse},
+)
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
 
-    def validate(self, attrs):
-        user = self._get_user(attrs['uid'])
-        if user is None or not default_token_generator.check_token(user, attrs['token']):
-            raise serializers.ValidationError(
-                {'token': 'لینک بازیابی نامعتبر است یا منقضی شده است.'}
-            )
-        if attrs['password'] != attrs['confirm_password']:
-            raise serializers.ValidationError(
-                {'confirm_password': 'رمزهای عبور یکسان نیستند.'}
-            )
-        try:
-            validate_password(attrs['password'], user)
-        except DjangoValidationError as e:
-            raise serializers.ValidationError({'password': list(e.messages)})
-
-        attrs['user'] = user
-        return attrs
-
-    @staticmethod
-    def _get_user(uidb64):
-        try:
-            pk = force_str(urlsafe_base64_decode(uidb64))
-            return User.objects.get(pk=pk, is_active=True)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            return None
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        PasswordResetService.reset_password(
+            serializer.validated_data['user'],
+            serializer.validated_data['password'],
+        )
+        return Response(
+            {'message': 'رمز عبور با موفقیت تغییر کرد. با رمز جدید وارد شوید.'},
+            status=status.HTTP_200_OK,
+        )

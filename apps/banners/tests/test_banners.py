@@ -2,11 +2,9 @@
 تست‌های بنرها
 """
 import io
-from datetime import timedelta
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils import timezone
 from PIL import Image
 
 from apps.banners.models import Banner
@@ -25,7 +23,7 @@ def tmp_media(settings, tmp_path):
 
 
 def create_banner(**kwargs):
-    data = dict(title='Sale', image=make_image(), position='home_main')
+    data = dict(title='Sale', image=make_image())
     data.update(kwargs)
     return Banner.objects.create(**data)
 
@@ -34,12 +32,9 @@ def create_banner(**kwargs):
 class TestBanners:
     url = '/api/v1/banners/'
 
-    def test_list_public_only_live(self, api_client):
-        now = timezone.now()
+    def test_list_public_only_active(self, api_client):
         create_banner(title='live')
         create_banner(title='inactive', is_active=False)
-        create_banner(title='future', start_at=now + timedelta(days=1))
-        create_banner(title='expired', end_at=now - timedelta(days=1))
 
         response = api_client.get(self.url)
 
@@ -55,15 +50,6 @@ class TestBanners:
 
         assert response.data['count'] == 2
 
-    def test_filter_by_position(self, api_client):
-        create_banner(title='a', position='home_main')
-        create_banner(title='b', position='home_side')
-
-        response = api_client.get(f'{self.url}?position=home_side')
-
-        assert response.data['count'] == 1
-        assert response.data['results'][0]['title'] == 'b'
-
     def test_sort_order(self, api_client):
         create_banner(title='second', sort_order=2)
         create_banner(title='first', sort_order=1)
@@ -78,12 +64,11 @@ class TestBanners:
             'title': 'New banner',
             'image': make_image(),
             'link_url': 'https://example.com/sale',
-            'position': 'home_main',
         }, format='multipart')
 
         assert response.status_code == 201
         assert response.data['title'] == 'New banner'
-        assert response.data['is_live'] is True
+        assert response.data['is_active'] is True
 
     def test_create_as_customer_forbidden(self, customer_client):
         response = customer_client.post(self.url, {
@@ -97,18 +82,6 @@ class TestBanners:
 
         assert response.status_code == 400
         assert 'image' in response.data['error']['details']
-
-    def test_end_before_start_rejected(self, admin_client):
-        now = timezone.now()
-        response = admin_client.post(self.url, {
-            'title': 'x',
-            'image': make_image(),
-            'start_at': (now + timedelta(days=2)).isoformat(),
-            'end_at': (now + timedelta(days=1)).isoformat(),
-        }, format='multipart')
-
-        assert response.status_code == 400
-        assert 'end_at' in response.data['error']['details']
 
     def test_patch_deactivate_hides_from_public(self, admin_client, api_client):
         banner = create_banner()

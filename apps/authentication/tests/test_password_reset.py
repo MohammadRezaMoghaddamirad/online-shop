@@ -3,59 +3,53 @@
 """
 import pytest
 from django.contrib.auth.tokens import default_token_generator
-from django.core.cache import cache
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
+from unittest.mock import patch
+
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
 NEW_PASSWORD = 'BrandNew@98765'
+NOTIFY = 'apps.authentication.services.password_reset_service.PasswordResetService.notify_user'
 
 
-@pytest.fixture(autouse=True)
-def _clear_throttle_cache():
-    """شمارندهٔ throttle بین تست‌ها پاک شود"""
-    cache.clear()
-    yield
-    cache.clear()
-
-
-def uid_and_token(user):
-    return (
-        urlsafe_base64_encode(force_bytes(user.pk)),
-        default_token_generator.make_token(user),
-    )
+def id_and_token(user):
+    return user.pk, default_token_generator.make_token(user)
 
 
 @pytest.mark.django_db
 class TestForgotPassword:
     url = '/api/v1/auth/password/forgot/'
 
-    def test_existing_email_sends_mail(self, api_client, customer_user, mailoutbox):
-        response = api_client.post(self.url, {'email': customer_user.email})
+    def test_existing_email_generates_token_without_sending_mail(self, api_client, customer_user, mailoutbox):
+        with patch(NOTIFY) as notify:
+            response = api_client.post(self.url, {'email': customer_user.email})
 
         assert response.status_code == 200
-        assert len(mailoutbox) == 1
-        assert mailoutbox[0].to == [customer_user.email]
-        assert 'uid=' in mailoutbox[0].body
-        assert 'token=' in mailoutbox[0].body
+        notify.assert_called_once()
+        user, user_id, token = notify.call_args.args
+        assert user == customer_user
+        assert user_id == customer_user.pk and token
+        assert default_token_generator.check_token(customer_user, token)
+        assert len(mailoutbox) == 0  # فعلاً ایمیل ارسال نمی‌شود
 
-    def test_unknown_email_gives_same_response_and_no_mail(self, api_client, customer_user, mailoutbox):
-        known = api_client.post(self.url, {'email': customer_user.email})
-        unknown = api_client.post(self.url, {'email': 'nobody@test.com'})
+    def test_unknown_email_gives_same_response_and_no_token(self, api_client, customer_user):
+        with patch(NOTIFY) as notify:
+            known = api_client.post(self.url, {'email': customer_user.email})
+            unknown = api_client.post(self.url, {'email': 'nobody@test.com'})
 
         assert unknown.status_code == 200
         assert unknown.data == known.data
-        assert len(mailoutbox) == 1  # فقط برای ایمیل موجود
+        assert notify.call_count == 1  # فقط برای ایمیل موجود
 
-    def test_inactive_user_gets_no_mail(self, api_client, customer_user, mailoutbox):
+    def test_inactive_user_gets_no_token(self, api_client, customer_user):
         customer_user.is_active = False
         customer_user.save()
 
-        response = api_client.post(self.url, {'email': customer_user.email})
+        with patch(NOTIFY) as notify:
+            response = api_client.post(self.url, {'email': customer_user.email})
 
         assert response.status_code == 200
-        assert len(mailoutbox) == 0
+        notify.assert_not_called()
 
     def test_invalid_email_rejected(self, api_client):
         response = api_client.post(self.url, {'email': 'not-an-email'})
@@ -63,21 +57,15 @@ class TestForgotPassword:
         assert response.status_code == 400
         assert 'email' in response.data['error']['details']
 
-    def test_throttled_after_limit(self, api_client):
-        for _ in range(5):
-            assert api_client.post(self.url, {'email': 'a@test.com'}).status_code == 200
-
-        assert api_client.post(self.url, {'email': 'a@test.com'}).status_code == 429
-
 
 @pytest.mark.django_db
 class TestResetPassword:
     url = '/api/v1/auth/password/reset/'
 
     def payload(self, user, **overrides):
-        uid, token = uid_and_token(user)
+        user_id, token = id_and_token(user)
         data = {
-            'uid': uid,
+            'id': user_id,
             'token': token,
             'password': NEW_PASSWORD,
             'confirm_password': NEW_PASSWORD,
@@ -109,8 +97,8 @@ class TestResetPassword:
         customer_user.refresh_from_db()
         assert customer_user.check_password('Customer@1234')
 
-    def test_invalid_uid_rejected(self, api_client, customer_user):
-        response = api_client.post(self.url, self.payload(customer_user, uid='!!!'))
+    def test_invalid_id_rejected(self, api_client, customer_user):
+        response = api_client.post(self.url, self.payload(customer_user, id='!!!'))
 
         assert response.status_code == 400
         assert 'token' in response.data['error']['details']

@@ -8,10 +8,10 @@ from apps.authentication.api.v1.serializers import (
     ForgotPasswordSerializer,
     ResetPasswordSerializer,
 )
-from apps.authentication.api.v1.throttles import (
-    ForgotPasswordThrottle,
-    ResetPasswordThrottle,
-)
+# from apps.authentication.api.v1.throttles import (
+#     ForgotPasswordThrottle,
+#     ResetPasswordThrottle,
+# )
 from apps.authentication.services.password_reset_service import PasswordResetService
 
 MessageResponse = inline_serializer(
@@ -33,7 +33,7 @@ MessageResponse = inline_serializer(
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [ForgotPasswordThrottle]
+    # throttle_classes = [ForgotPasswordThrottle]
 
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
@@ -48,14 +48,14 @@ class ForgotPasswordView(APIView):
 @extend_schema(
     tags=['Auth'],
     summary='تعیین رمز عبور جدید',
-    description='uid و token از لینک ایمیل گرفته می‌شوند. بعد از موفقیت، نشست‌های قبلی (refresh tokenها) باطل می‌شوند.',
+    description='id و token از لینک ایمیل گرفته می‌شوند. بعد از موفقیت، نشست‌های قبلی (refresh tokenها) باطل می‌شوند.',
     request=ResetPasswordSerializer,
     responses={200: MessageResponse},
 )
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
-    throttle_classes = [ResetPasswordThrottle]
+    # throttle_classes = [ResetPasswordThrottle]
 
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)

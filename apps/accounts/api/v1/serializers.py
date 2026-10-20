@@ -1,4 +1,21 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
+
+from core.validators import normalize_email
+
+
+class UniqueEmailMixin:
+    """نرمال‌سازی ایمیل و جلوگیری از تکراری بودن (به‌جز خود کاربرِ در حال ویرایش)"""
+
+    def validate_email(self, value):
+        User = get_user_model()
+        value = normalize_email(value)
+        qs = User.objects.filter(email__iexact=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('این ایمیل قبلاً ثبت شده است.')
+        return value
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -51,7 +68,7 @@ class UserSerializer(serializers.Serializer):
         return obj.get_role_display() if hasattr(obj, 'get_role_display') else obj.role
 
 
-class ProfileUpdateSerializer(serializers.Serializer):
+class ProfileUpdateSerializer(UniqueEmailMixin, serializers.Serializer):
     """ویرایش پروفایل توسط خود کاربر"""
     email = serializers.EmailField(required=False)
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
@@ -66,7 +83,7 @@ class ProfileUpdateSerializer(serializers.Serializer):
         return instance
 
 
-class AdminUserSerializer(serializers.Serializer):
+class AdminUserSerializer(UniqueEmailMixin, serializers.Serializer):
     """مدیریت کاربران توسط ادمین"""
     id = serializers.IntegerField(read_only=True)
     username = serializers.CharField(read_only=True)
