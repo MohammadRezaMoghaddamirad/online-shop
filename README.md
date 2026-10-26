@@ -151,7 +151,7 @@ pytest
 ## 👨‍💻 توسعه‌دهنده بک‌اند
 
 - GitHub: [@MohammadRezaMoghaddamirad](https://github.com/MohammadRezaMoghaddamirad)
-- Repository: online-shop
+- Repository: [online-shop](https://github.com/MohammadRezaMoghaddamirad/online-shop)
 
 ## 👨‍💻 توسعه‌دهنده فرانت‌اند
 
